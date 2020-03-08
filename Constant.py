@@ -1,0 +1,15 @@
+# Current pin numbers are based on raspberry pi 2 model B
+
+BRAILLE_P1_PIN = 26
+BRAILLE_P2_PIN = 21
+BRAILLE_P3_PIN = 20
+BRAILLE_P4_PIN = 19
+BRAILLE_P5_PIN = 16
+BRAILLE_P6_PIN = 13
+
+NEXT_PIN = 6
+RESET_PIN = 12
+INDICATOR_UP = 5
+INDICATOR_DOWN = 7
+
+BOUNCE_TIME = 200 # in milliseconds
