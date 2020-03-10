@@ -3,9 +3,12 @@ from Dicts import *
 buttonState = [0,0,0,0,0,0]
 binInput = 0
 lastBinInput = 0
+waitingForCellInput = False
+
 pressedRST = False
 pressedNXT = False
-waitingForCellInput = False
+pressedLVLUP = False
+pressedLVLDOWN = False
 
 #Global callbacks to call when buttons are pressed
 
@@ -74,4 +77,14 @@ def callbackNXT(channel):
     buttonState = [0,0,0,0,0,0]
     binInput = 0
     pressedNXT = True
+        
+def callbackLVLUP(channel):
+    global pressedLVLUP
+    pressedLVLUP = True
+    print("up")
+
+def callbackLVLDOWN(channel):
+    global pressedLVLDOWN
+    pressedLVLDOWN = True
+    print("down")
         

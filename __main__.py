@@ -32,8 +32,8 @@ GPIO.add_event_detect(c.BRAILLE_P6_PIN, GPIO.RISING, callback=g.callback5, bounc
 
 GPIO.add_event_detect(c.NEXT_PIN, GPIO.RISING, callback=g.callbackNXT, bouncetime=c.BOUNCE_TIME)
 GPIO.add_event_detect(c.RESET_PIN, GPIO.RISING, callback=g.callbackRST, bouncetime=c.BOUNCE_TIME)
-GPIO.add_event_detect(c.INDICATOR_UP, GPIO.RISING, callback=Test, bouncetime=c.BOUNCE_TIME)
-GPIO.add_event_detect(c.INDICATOR_DOWN, GPIO.RISING, callback=Test, bouncetime=c.BOUNCE_TIME)
+GPIO.add_event_detect(c.INDICATOR_UP, GPIO.RISING, callback=g.callbackLVLUP, bouncetime=c.BOUNCE_TIME)
+GPIO.add_event_detect(c.INDICATOR_DOWN, GPIO.RISING, callback=g.callbackLVLDOWN, bouncetime=c.BOUNCE_TIME)
 
 """
 engine = pyttsx3.init()
