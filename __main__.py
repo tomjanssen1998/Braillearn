@@ -32,16 +32,16 @@ def main():
 
         waitForBreak() # Wait for user inputs
         
-        if g.checkState('NXT'):
-                g.setState('NXT', False)
+        if g.checkBtnState('NXT'):
+                g.setBtnState('NXT', False)
                 if g.lastBinInput == g.T2B[letter]: # Check if answer is correct
                     print("Correct!")
                     #break
                 else:
                     print("Incorrect")
 
-        if g.checkState('RST'):
-                g.setState('RST', False)
+        if g.checkBtnState('RST'):
+                g.setBtnState('RST', False)
 
 
 # i n i t i a l i z e A u d i o ():
@@ -58,7 +58,7 @@ def initializeAudio():
 # position refers to position of the audio file where we start playing (seconds)
 #
 def playAudio(audio_name, position):
-    if (audio_name == 'Incorrect' or audio_name == 'Correct'):
+    if (audio_name == 'Incorrect' or audio_name == 'Correct' or audio_name == 'Correct_Short'):
         r = randrange(2)
         if (r == 0):
             to_load = 'Sounds/' + audio_name + '1.mp3'
@@ -110,66 +110,120 @@ def unpauseAudio():
 #
 def runTutorial():
     
-    g.globalState = -1 # Tutorial part 1
+    g.globalState = -1 # Tutorial part 1 - Introduction
     playAudio('Tutorial1', 0)
     
     waitForTutorial()
-    time.sleep(c.TUTORIAL_SLEEP_TIME1)
     
-    g.globalState = -2 # Tutorial part 2
+    time.sleep(c.TUTORIAL_SLEEP_TIME1)
+    g.globalState = -2 # Tutorial part 2 - Buttons
     playAudio('Tutorial2', 0)
         
     skipped = waitForTutorial()    
     if (not skipped):
         time.sleep(c.TUTORIAL_SLEEP_TIME1)
-        waitForPress('RST')
+        waitForBtnPress('RST')
         time.sleep(c.TUTORIAL_SLEEP_TIME2)
-        waitForPress('NXT')
+        waitForBtnPress('NXT')
         time.sleep(c.TUTORIAL_SLEEP_TIME2)
-        waitForPress('LVLUP')
+        waitForBtnPress('LVLUP')
         time.sleep(c.TUTORIAL_SLEEP_TIME2)
-        waitForPress('LVLDOWN')
+        waitForBtnPress('LVLDOWN')
     
-    g.globalState = -3 # Tutorial part 3
     time.sleep(c.TUTORIAL_SLEEP_TIME1)
-    playAudio('Tutorial3', 0)
+    g.globalState = -3 # Tutorial part 3 - Braille inputs
+    playAudio('Tutorial3-1', 0)
+    
+    skipped = waitForTutorial()
+    if (not skipped):
+        time.sleep(c.TUTORIAL_SLEEP_TIME1)
+        waitForAllBraille()
+
+    time.sleep(c.TUTORIAL_SLEEP_TIME1)
+    playAudio('Tutorial3-2', 0)
+    
+    waitForTutorial()
+
+    time.sleep(c.TUTORIAL_SLEEP_TIME1)
+    g.globalState = -4 # Tutorial part 4 - Concluding
+    playAudio('Tutorial4', 0)
     
     while True:
         time.sleep(0.01)
-        if(g.checkState('RST')):
-            g.resetButtonStates()
+        if(g.checkBtnState('RST')):
+            g.resetBtnStates()
             stopAudio()
             runTutorial()
-        elif(g.checkState('NXT')):
-            g.resetButtonStates()
+        elif(g.checkBtnState('NXT')):
+            g.resetBtnStates()
             stopAudio()
             break   
-        elif(g.checkState('LVLUP')):
-            g.resetButtonStates()
+        elif(g.checkBtnState('LVLUP')):
+            g.resetBtnStates()
             stopAudio()
             break
             #ToDo: Handle level modes
-        elif(g.checkState('LVLDOWN')):
-            g.resetButtonStates()
+        elif(g.checkBtnState('LVLDOWN')):
+            g.resetBtnStates()
             stopAudio()
             break
             #ToDo: Handle level modes
         
-    print("done")    
+    print("done")
 
-# w a i t F o r P r e s s ()
+# w a i t F o r A l l B r a i l l e()
+# ===============================
+# Waits for all braille inputs to be pushed down
+#
+def waitForAllBraille():
+    # ToDo: Set all braille input pins in up position
+    g.pausedPosition = 0.0 # Reset pause position variable
+    
+    playAudio('TutorialBRAILLE', 0)
+    prevInput = currInput = 0
+    
+    while True:
+
+        time.sleep(0.01)
+        currInput = g.binInput
+        
+        if (currInput == g.T2B['all']): # all braille pins are down
+            break
+        
+        if (prevInput != currInput): # braille pin was pressed but not yet all pins are down
+            prevInput = currInput
+            pauseAudio()
+            
+            playAudio('Correct_Short', 0)
+            waitForAudio()
+            
+            unpauseAudio()
+    
+    stopAudio() # when user has pressed target button, we can stop button-specific instruction
+    
+    g.brailleState = [0,0,0,0,0,0] # reset Braille input
+    g.binInput = 0
+    g.lastBinInput = 0
+    
+    print("All braille cells pressed")
+    playAudio('Correct', 0)
+    waitForAudio()
+
+        
+
+# w a i t F o r B t n P r e s s ()
 # ===============================
 # Waits for the user to press a certain button
 #
-def waitForPress(button_name):
-    g.resetButtonStates()
+def waitForBtnPress(button_name):
+    g.resetBtnStates()
     g.pausedPosition = 0.0 # Reset pause position variable
     
     playAudio('Tutorial' + button_name, 0)
     
-    is_pressed = g.checkState(button_name)
+    is_pressed = g.checkBtnState(button_name)
     while (not is_pressed):
-        if (g.numberOfPresses() > 0):
+        if (g.numberOfBtnPresses() > 0):
             
             print("Incorrect button pressed")
             pauseAudio() # Pause currently playing
@@ -178,10 +232,10 @@ def waitForPress(button_name):
             waitForAudio()
             
             unpauseAudio() # Resume currently playing
-            g.resetButtonStates()
+            g.resetBtnStates()
         
         time.sleep(0.01)
-        is_pressed = g.checkState(button_name)
+        is_pressed = g.checkBtnState(button_name)
     
     stopAudio() # when user has pressed target button, we can stop button-specific instruction
     
@@ -189,7 +243,7 @@ def waitForPress(button_name):
     playAudio('Correct', 0)
     waitForAudio()
     
-    g.setState(button_name, False)
+    g.setBtnState(button_name, False)
         
     
 # w a i t F o r A u d i o ()
@@ -213,8 +267,8 @@ def waitForTutorial():
     while (is_playing) :
         time.sleep(0.01)
         is_playing = mixer.music.get_busy()
-        if (g.checkState('NXT')):
-            g.setState('NXT', False)
+        if (g.checkBtnState('NXT')):
+            g.setBtnState('NXT', False)
             stopAudio()
             return True
     return False
@@ -225,11 +279,11 @@ def waitForTutorial():
 # Only leaves loop when next-button or reset-button input occurs
 #
 def waitForBreak():
-    g.resetButtonStates()
+    g.resetBtnStates()
     
     while True :
         time.sleep(0.01) #Precautionary: Don't know if this is needed, but thought is that this delay gives the interrupt time to change variable
-        if (g.checkState('NXT') or g.checkState('RST')):
+        if (g.checkBtnState('NXT') or g.checkBtnState('RST')):
             break
 
 # i n i t i a l i z e T T S ()

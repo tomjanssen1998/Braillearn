@@ -97,7 +97,7 @@ def callbackLVLDOWN(channel):
 # ===============================
 # Returns state of button 'button_name'
 #
-def checkState(button_name):
+def checkBtnState(button_name):
     state = False
     
     if (button_name == 'RST'):
@@ -115,7 +115,7 @@ def checkState(button_name):
 # ===============================
 # Returns state of button 'button_name'
 #
-def setState(button_name, state):
+def setBtnState(button_name, state):
     global buttonState
     
     if (button_name == 'RST'):
@@ -131,7 +131,7 @@ def setState(button_name, state):
 # ===============================
 # Returns number of buttons which have been pressed (and not reset)
 #
-def numberOfPresses():
+def numberOfBtnPresses():
     presses = 0
     for i in buttonState:
         if (i == True):
@@ -142,6 +142,6 @@ def numberOfPresses():
 # ===============================
 # Resets all button states to 0
 #
-def resetButtonStates():
+def resetBtnStates():
     global buttonState
     buttonState = [0,0,0,0]
