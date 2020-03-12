@@ -5,17 +5,18 @@ import importlib
 import time
 import Constant as c
 import RPi.GPIO as GPIO
-
-global engine # Engine used for TTS
-
+from pygame import mixer #for playing mp3 sounds
 
 # m a i n ()
 # ===========================
 # Main function
 #
 def main():
+    initializeAudio()
     initializeGPIO()
-    initializeTTS()
+    #initializeTTS()
+    
+    runTutorial()
     
     #Dynamically load tasks when switching levels
     tasks = importlib.import_module("Tasks.Task1")
@@ -23,35 +24,222 @@ def main():
     #loop through letters of quiz one by one
     for letter in tasks.quiz:
         print("write the symbol for '" + letter + "': " + str(g.T2B[letter]))
-        #string = "write the symbol for: " + letter
+        string = "write the symbol for: " + letter
         
         #Read the task out loud
-        #Prepare_TTS(string)
+        #prepareTTS(string)
 
         waitForBreak() # Wait for user inputs
         
-        if g.pressedNXT:
-                g.pressedNXT = False
+        if g.checkState('NXT'):
+                g.setState('NXT', False)
                 if g.lastBinInput == g.T2B[letter]: # Check if answer is correct
                     print("Correct!")
                     #break
                 else:
                     print("Incorrect")
 
-        if g.pressedRST:
-                g.pressedRST = False
+        if g.checkState('RST'):
+                g.setState('RST', False)
 
 
-   
+# i n i t i a l i z e A u d i o ():
+# ===============================
+# intialize mixer for playing audio
+#
+def initializeAudio():
+    mixer.init(44100, -16, 2, 10240) # make this last one (buffer size) bigger if underrun error occurs
+    mixer.music.set_volume(c.AUDIO_VOLUME)
+
+# p l a y A u d i o (audio_name):
+# ===============================
+# plays audio file (mp3) referred to by audio_name
+# position refers to position of the audio file where we start playing (seconds)
+#
+def playAudio(audio_name, position):
+    
+    if (audio_name == 'Tutorial1'):
+        to_load = 'Sounds/Tutorial1.mp3'
+    elif (audio_name == 'Tutorial2'):
+        to_load = 'Sounds/Tutorial2.mp3'
+    elif (audio_name == 'Tutorial3'):
+        to_load = 'Sounds/Tutorial3.mp3'
+    elif (audio_name == 'TutorialRST'):
+        to_load = 'Sounds/TutorialRST.mp3'
+    elif (audio_name == 'TutorialNXT'):
+        to_load = 'Sounds/TutorialNXT.mp3'
+    elif (audio_name == 'TutorialLVLUP'):
+        to_load = 'Sounds/TutorialLVLUP.mp3'
+    elif (audio_name == 'TutorialLVLDOWN'):
+        to_load = 'Sounds/TutorialLVLDOWN.mp3'
+    elif (audio_name == 'Incorrect'):
+        to_load = 'Sounds/Incorrect1.mp3'
+    elif (audio_name == 'Correct'):
+        to_load = 'Sounds/Correct.mp3'
+        
+    g.currentAudio = audio_name # currently playing audio
+    mixer.music.load(to_load)
+    mixer.music.play(0, position) # 0 indicates it plays 1 time
+    print("playing: " + audio_name + " at pos: " + str(mixer.music.get_pos()))
+
+# s t o p A u d i o ():
+# ===============================
+# Stops currently playing audio (if something is playing)
+#
+def stopAudio():
+    if (mixer.music.get_busy() == True):
+        mixer.music.stop() # Stop audio
+
+# p a u s e A u d i o ()
+# ===============================
+# Pauses currently playing audio to be able to play another audio file
+
+def pauseAudio():
+    g.pausedAudio = ''
+    if (mixer.music.get_busy() == True):
+        g.pausedAudio = g.currentAudio
+        mixer.music.pause()
+        g.pausedPosition += float(mixer.music.get_pos() / 1000) # float division: convert milliseconds to seconds
+        print("paused: audio: " + str(g.pausedAudio) + " position: " + str(g.pausedPosition))
+        mixer.music.stop() # Stop audio
+        
+# u n p a u s e A u d i o ()
+# ===============================
+# Resumes previously playing audio at current position
+
+def unpauseAudio():
+    stopAudio() # Only stops audio if something is playing
+    
+    if (g.pausedAudio != ''): # Only resume if there was something playing before the pause
+        playAudio(g.pausedAudio, g.pausedPosition)
+    
+
+# r u n T u t o r i a l ()
+# ===============================
+# run through tutorial of Braillearn
+#
+def runTutorial():
+    
+    g.globalState = -1 # Tutorial part 1
+    playAudio('Tutorial1', 0)
+    
+    waitForTutorial()
+    time.sleep(c.TUTORIAL_SLEEP_TIME1)
+    
+    g.globalState = -2 # Tutorial part 2
+    playAudio('Tutorial2', 0)
+        
+    skipped = waitForTutorial()    
+    if (not skipped):
+        time.sleep(c.TUTORIAL_SLEEP_TIME1)
+        waitForPress('RST')
+        time.sleep(c.TUTORIAL_SLEEP_TIME2)
+        waitForPress('NXT')
+        time.sleep(c.TUTORIAL_SLEEP_TIME2)
+        waitForPress('LVLUP')
+        time.sleep(c.TUTORIAL_SLEEP_TIME2)
+        waitForPress('LVLDOWN')
+    
+    g.globalState = -3 # Tutorial part 3
+    time.sleep(c.TUTORIAL_SLEEP_TIME1)
+    playAudio('Tutorial3', 0)
+    
+    while True:
+        time.sleep(0.01)
+        if(g.checkState('RST')):
+            g.resetButtonStates()
+            stopAudio()
+            runTutorial()
+        elif(g.checkState('NXT')):
+            g.resetButtonStates()
+            stopAudio()
+            break   
+        elif(g.checkState('LVLUP')):
+            g.resetButtonStates()
+            stopAudio()
+            break
+            #ToDo: Handle level modes
+        elif(g.checkState('LVLDOWN')):
+            g.resetButtonStates()
+            stopAudio()
+            break
+            #ToDo: Handle level modes
+        
+    print("done")    
+
+# w a i t F o r P r e s s ()
+# ===============================
+# Waits for the user to press a certain button
+#
+def waitForPress(button_name):
+    g.resetButtonStates()
+    g.pausedPosition = 0.0 # Reset pause position variable
+    
+    playAudio('Tutorial' + button_name, 0)
+    
+    is_pressed = g.checkState(button_name)
+    while (not is_pressed):
+        if (g.numberOfPresses() > 0):
+            
+            print("Incorrect button pressed")
+            pauseAudio() # Pause currently playing
+            
+            playAudio('Incorrect', 0)
+            waitForAudio()
+            
+            unpauseAudio() # Resume currently playing
+            g.resetButtonStates()
+        
+        time.sleep(0.01)
+        is_pressed = g.checkState(button_name)
+    
+    stopAudio() # when user has pressed target button, we can stop button-specific instruction
+    
+    print("Correct button pressed")
+    playAudio('Correct', 0)
+    waitForAudio()
+    
+    g.setState(button_name, False)
+        
+    
+# w a i t F o r A u d i o ()
+# ===============================
+# Waits for current audio file to finish
+#
+def waitForAudio():
+    is_playing = True
+    while (is_playing) :
+        time.sleep(0.01)
+        is_playing = mixer.music.get_busy()
+    
+
+# w a i t F o r T u t o r i a l ()
+# ===============================
+# Remains in loop until current audio file has finished playing or next button has been pressed
+# Returns True if skip button was pressed, False otherwise
+#
+def waitForTutorial():
+    is_playing = True
+    while (is_playing) :
+        time.sleep(0.01)
+        is_playing = mixer.music.get_busy()
+        if (g.checkState('NXT')):
+            g.setState('NXT', False)
+            stopAudio()
+            return True
+    return False
+    
 
 # w a i t F o r B r e a k ()
 # ===============================
 # Only leaves loop when next-button or reset-button input occurs
 #
 def waitForBreak():
+    g.resetButtonStates()
+    
     while True :
         time.sleep(0.01) #Precautionary: Don't know if this is needed, but thought is that this delay gives the interrupt time to change variable
-        if (g.pressedNXT or g.pressedRST):
+        if (g.checkState('NXT') or g.checkState('RST')):
             break
 
 # i n i t i a l i z e T T S ()
@@ -59,11 +247,11 @@ def waitForBreak():
 # initialize text-to-speech library
 #
 def initializeTTS():
-    global engine # So that we use the global 'engine' variable instead of creating a local one
+    #global engine # So that we use the global 'engine' variable instead of creating a local one
     engine = pyttsx3.init()
     engine.setProperty('rate', 140)
     voices = engine.getProperty('voices')
-    engine.setProperty('voice', voices[49].id)
+    engine.setProperty('voice', voices[11].id)
 
     # === Voices ===
     # 10 = default
@@ -76,8 +264,18 @@ def initializeTTS():
 # uses text-to-speech to read out the text given as input
 #
 def readText(text):
-    engine.say(text) # Since we are not modifying 'engine' here but reading it, we don't need to put 'global engine' inside the method
-    engine.runAndWait()
+    print("Start reading")
+    ab = pyttsx3.init()
+    ab.setProperty('rate', 140)
+    voices = ab.getProperty('voices')
+    ab.setProperty('voice', voices[11].id)
+    ab.say("this") # Since we are not modifying 'engine' here but reading it, we don't need to put 'global engine' inside the method
+    ab.say("is")
+    ab.say("a")
+    ab.say("test")
+    ab.say("Welcome to Braillearn this is a cool program that let's you learn braille without difficulties. To start learning press the next button") 
+    ab.runAndWait()
+    print("Finished reading")
     return
 
 # p r e p a r e T T S (text)
@@ -85,8 +283,9 @@ def readText(text):
 # Creates a thread which runs the 'readText(text)' method with text given as input
 #
 def prepareTTS(text):
-    p = multiprocessing.Process(target = readText, args=(text,))
-    p.start()
+    global voice_thread 
+    voice_thread = multiprocessing.Process(target = readText, args=(text,))
+    voice_thread.start()
 
 # i n i t i a l i z e G P I O ()
 # ===============================

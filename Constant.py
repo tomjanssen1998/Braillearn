@@ -13,3 +13,8 @@ INDICATOR_UP = 5
 INDICATOR_DOWN = 7
 
 BOUNCE_TIME = 200 # in milliseconds
+
+AUDIO_VOLUME = 0.1
+
+TUTORIAL_SLEEP_TIME1 = 0.8 # in seconds
+TUTORIAL_SLEEP_TIME2 = 0.4 # in seconds
