@@ -6,6 +6,7 @@ import time
 import Constant as c
 import RPi.GPIO as GPIO
 from pygame import mixer #for playing mp3 sounds
+from random import randrange
 
 # m a i n ()
 # ===========================
@@ -57,26 +58,15 @@ def initializeAudio():
 # position refers to position of the audio file where we start playing (seconds)
 #
 def playAudio(audio_name, position):
+    if (audio_name == 'Incorrect' or audio_name == 'Correct'):
+        r = randrange(2)
+        if (r == 0):
+            to_load = 'Sounds/' + audio_name + '1.mp3'
+        else:
+            to_load = 'Sounds/' + audio_name + '2.mp3'
+    else:
+        to_load = 'Sounds/' + audio_name + '.mp3'
     
-    if (audio_name == 'Tutorial1'):
-        to_load = 'Sounds/Tutorial1.mp3'
-    elif (audio_name == 'Tutorial2'):
-        to_load = 'Sounds/Tutorial2.mp3'
-    elif (audio_name == 'Tutorial3'):
-        to_load = 'Sounds/Tutorial3.mp3'
-    elif (audio_name == 'TutorialRST'):
-        to_load = 'Sounds/TutorialRST.mp3'
-    elif (audio_name == 'TutorialNXT'):
-        to_load = 'Sounds/TutorialNXT.mp3'
-    elif (audio_name == 'TutorialLVLUP'):
-        to_load = 'Sounds/TutorialLVLUP.mp3'
-    elif (audio_name == 'TutorialLVLDOWN'):
-        to_load = 'Sounds/TutorialLVLDOWN.mp3'
-    elif (audio_name == 'Incorrect'):
-        to_load = 'Sounds/Incorrect1.mp3'
-    elif (audio_name == 'Correct'):
-        to_load = 'Sounds/Correct.mp3'
-        
     g.currentAudio = audio_name # currently playing audio
     mixer.music.load(to_load)
     mixer.music.play(0, position) # 0 indicates it plays 1 time
