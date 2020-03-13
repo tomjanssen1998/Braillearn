@@ -6,42 +6,122 @@ import time
 import Constant as c
 import RPi.GPIO as GPIO
 from pygame import mixer #for playing mp3 sounds
-from random import randrange
-
+#   randrange
+import random 
 # m a i n ()
 # ===========================
 # Main function
 #
 def main():
     initializeAudio()
+    print('Done initializing audio')
     initializeGPIO()
+    print('Done initializing GPIO')
     #initializeTTS()
     
     runTutorial()
     
-    #Dynamically load tasks when switching levels
-    tasks = importlib.import_module("Tasks.Task1")
-
-    #loop through letters of quiz one by one
-    for letter in tasks.quiz:
-        print("write the symbol for '" + letter + "': " + str(g.T2B[letter]))
-        string = "write the symbol for: " + letter
+    taskFile = 'Tasks.Task1'
+    
+    #Infinite loop: only stop main program when RPi is shut down
+    while True:
+        #Dynamically load tasks when switching levels
+        tasks = importlib.import_module(taskFile)
+        abort = False
         
-        #Read the task out loud
-        #prepareTTS(string)
+        #Randomize order of quiz if desired
+        quiz = tasks.quiz.copy()
+        if tasks.randomizeOrder:
+            random.shuffle(quiz)
 
-        waitForBreak() # Wait for user inputs
-        
-        if g.checkBtnState('NXT'):
-                g.setBtnState('NXT', False)
-                if g.lastBinInput == g.T2B[letter]: # Check if answer is correct
-                    print("Correct!")
-                    #break
+        print(quiz)
+
+        #loop though question of quiz
+        for question in quiz:
+            answer = []
+
+            if abort:       #Stop current quiz (to go to different level)
+                break
+
+            #loop through letters of question one by one
+            for count, letter in enumerate(question):
+                
+                if abort:   #Stop current quiz (to go to different level)
+                    break
+                
+                completed = False
+                
+                while not completed:
+                    print("write the symbol for '" + letter + "': " + str(g.T2B[letter]))
+                    string = "write the symbol for: " + letter
+                    
+#                     Prepare_TTS(string)
+
+                    waitForBreak() # Wait for user inputs
+                    
+                    if g.checkBtnState('LVLUP'):
+                        g.resetBtnStates()
+                        if g.task < g.taskCount:
+                            g.task += 1
+                            taskFile = 'Tasks.Task' + str(g.task)
+                            abort = True
+                            print('Moving to task ' + str(g.task))
+                            break
+                    
+                    if g.checkBtnState('LVLDOWN'):
+                        g.resetBtnStates()
+                        if g.task > 1:
+                            g.task -= 1
+                            taskFile = 'Tasks.Task' + str(g.task)
+                            abort = True
+                            print('Moving to task ' + str(g.task))
+                            break
+                            
+                    if g.checkBtnState('NXT'):
+                        g.resetBtnStates()
+                        try:
+                            answer[count] = g.B2T[g.lastBinInput]
+                        except:
+                            answer.append(g.B2T[g.lastBinInput])
+
+                        print("Answer: " + str(answer))
+                        
+                        if tasks.feedbackPerLetter:
+                            if g.lastBinInput == g.T2B[letter]: # Check if answer is correct
+                                print("Letter correct!")
+                                completed = True
+                            else:
+                                print("Incorrect")
+                                if tasks.repeatUntilCorrect:
+                                    if tasks.repeatImmediately:
+                                        completed = False
+                                    else:
+                                        question.append(letter)
+                                        completed = True
+                                else:
+                                    completed = True
+                        else:
+                            completed = True
+
+                    if g.checkBtnState('RST'):
+                        g.resetBtnStates()
+
+
+            if not tasks.feedbackPerLetter:
+                answer = ''.join(answer)
+                if question == answer:
+                    print("Question answered correctly!")
+                elif tasks.repeatUntilCorrect:
+                    if tasks.repeatImmediately:
+                        print("That is incorrect, try again!")
+                        quiz.insert(question,count+1)
+                    else:
+                        print("That is incorrect, try again later!")
+                        quiz.append(question)
                 else:
-                    print("Incorrect")
-
-        if g.checkBtnState('RST'):
-                g.setBtnState('RST', False)
+                    print("That is incorrect!")
+            else:
+                print('Word done!')
 
 
 # i n i t i a l i z e A u d i o ():
@@ -337,7 +417,10 @@ def prepareTTS(text):
 #
 def initializeGPIO():
     GPIO.setmode(GPIO.BCM) #referring to the pins by the "Broadcom SOC channel" numbers
-
+    
+    #For Raspberry Pi 3B:
+    #GPIO.setmode(GPIO.BOARD)
+    
     # Input braille cell
     GPIO.setup(c.BRAILLE_P1_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Braille part 1
     GPIO.setup(c.BRAILLE_P2_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Braille part 2

@@ -12,6 +12,20 @@ RESET_PIN = 12
 INDICATOR_UP = 5
 INDICATOR_DOWN = 7
 
+#Pinout RPi model 3B
+'''
+BRAILLE_P1_PIN = 35
+BRAILLE_P2_PIN = 37
+BRAILLE_P3_PIN = 32                                                             
+BRAILLE_P4_PIN = 36
+BRAILLE_P5_PIN = 38
+BRAILLE_P6_PIN = 40
+
+NEXT_PIN = 18
+RESET_PIN = 22
+INDICATOR_UP = 24
+INDICATOR_DOWN = 26
+'''
 BOUNCE_TIME = 200 # in milliseconds
 
 AUDIO_VOLUME = 0.1

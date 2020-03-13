@@ -1,4 +1,5 @@
 from Dicts import *
+import os
 
 # Global states:
 # -3 = Tutorial part 3
@@ -16,6 +17,11 @@ buttonState = [0,0,0,0] # In order: [RST, NXT, LVLUP, LVLDOWN]
 brailleState = [0,0,0,0,0,0]
 binInput = 0
 lastBinInput = 0
+task = 1
+
+TaskDir = './Tasks'
+taskCount = len([name for name in os.listdir(TaskDir) if os.path.isfile(os.path.join(TaskDir,name))])
+
 
 #Global callbacks to call when buttons are pressed
 
@@ -87,10 +93,14 @@ def callbackNXT(channel):
         
 def callbackLVLUP(channel):
     global buttonState
+    print('callbackLVLUP called')
+    callbackNXT(channel)
     buttonState[2] = 1
 
 def callbackLVLDOWN(channel):
     global buttonState
+    print('callbackLVLDOWN called')
+    callbackNXT(channel)
     buttonState[3] = 1
 
 # c h e c k S t a t e (button_name)
