@@ -1,30 +1,16 @@
 # Current pin numbers are based on raspberry pi 2 model B
 
-BRAILLE_P1_PIN = 26
-BRAILLE_P2_PIN = 21
-BRAILLE_P3_PIN = 20
-BRAILLE_P4_PIN = 19
-BRAILLE_P5_PIN = 16
-BRAILLE_P6_PIN = 13
+BRAILLE_INPUT_PIN = [26,21,20,19,16,13]
 
-NEXT_PIN = 6
-RESET_PIN = 12
-INDICATOR_UP = 5
-INDICATOR_DOWN = 7
+#Function pins: NXT, RST, LVLUP, LVLDOWN
+FUNCTION_PIN = [6,12,5,7]
 
 #Pinout RPi model 3B
 '''
-BRAILLE_P1_PIN = 35
-BRAILLE_P2_PIN = 37
-BRAILLE_P3_PIN = 32                                                             
-BRAILLE_P4_PIN = 36
-BRAILLE_P5_PIN = 38
-BRAILLE_P6_PIN = 40
+BRAILLE_INPUT_PIN = [35,37,32,36,38,40]
 
-NEXT_PIN = 18
-RESET_PIN = 22
-INDICATOR_UP = 24
-INDICATOR_DOWN = 26
+#Function pins: NXT, RST, LVLUP, LVLDOWN
+FUNCTION_PIN = [18,22,24,26]
 '''
 BOUNCE_TIME = 200 # in milliseconds
 

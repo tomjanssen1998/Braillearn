@@ -45,10 +45,10 @@ def main():
 
             #Ask question to user
             if tasks.quizMode < 3: #If the quiz is for single letters:
-            	string = "Please write the letter: " + question
+                string = "Please write the letter: " + question
             else:
-            	string = "Please write the word: " + question
-            	
+                string = "Please write the word: " + question
+                
             #Prepare_TTS(string)
             print(string)
 
@@ -61,31 +61,30 @@ def main():
                 completed = False
                 
                 while not completed:
-                    if task.readEveryLetter:
-	                    string = "The next letter is: " + letter
-	                    print(string + "': " + str(g.T2B[letter]))
-						#Prepare_TTS(string)
-					else:
-						print(letter + ' : ' + str(g.T2B[letter])) #For testing purposes only
+                    if tasks.readEveryLetter:
+                        string = "The next letter is: " + letter
+                        print(string + "': " + str(g.T2B[letter]))
+                        #Prepare_TTS(string)
+                    else:
+                        print(letter + ' : ' + str(g.T2B[letter])) #For testing purposes only
 
-					#Display requested letter if required
-					if task.quizMode == 1 or task.quizMode == 3:
-						print("Activating read braille cell") #For debugging purposes
-						#actuate braille read cell
-						out_val = g.T2B[letter]
-						if out_val >= 32:
-							out_val -= 32
-							#activate braille dot 6
-						if out_val >= 16:
-							out_val -= 16
-							#activate braille dot 5
-						#etc...
-						
+                    #Display requested letter if required
+                    if tasks.quizMode == 1 or tasks.quizMode == 3:
+                        print("Activating read braille cell") #For debugging purposes
+                        #actuate braille read cell
+                        out_val = g.T2B[letter]
+                        for dot in range(5,-1,-1):
+                            if out_val >= 2**dot:
+                                out_val -= 2**dot
+                                #activate braille dot 'dot'
+
+                        
 
                     waitForBreak() # Wait for user inputs
                     
                     for dot in range(0,6):
-                    	#deactivate braille bot 'dot'
+                        #deactivate braille dot 'dot'
+                        pass
 
                     if g.checkBtnState('LVLUP'):
                         g.resetBtnStates()
@@ -107,29 +106,34 @@ def main():
                             
                     if g.checkBtnState('NXT'):
                         g.resetBtnStates()
-                        try:
-                            answer[count] = g.B2T[g.lastBinInput]
-                        except:
-                            answer.append(g.B2T[g.lastBinInput])
-
-                        print("Answer: " + str(answer))
-                        
-                        if tasks.feedbackPerLetter:
-                            if g.lastBinInput == g.T2B[letter]: # Check if answer is correct
-                                print("Letter correct!")
-                                completed = True
-                            else:
-                                print("Incorrect")
-                                if tasks.repeatUntilCorrect:
-                                    if tasks.repeatImmediately:
-                                        completed = False
-                                    else:
-                                        question.append(letter)
-                                        completed = True
-                                else:
+                        if g.lastBinInput != 0:
+                            try:
+                                answer[count] = g.B2T[g.lastBinInput]
+                            except:
+                                try:
+                                    answer.append(g.B2T[g.lastBinInput])
+                                except:
+                                    pass
+                            print("Answer: " + str(answer))
+                            
+                            if tasks.feedbackPerLetter:
+                                if g.lastBinInput == g.T2B[letter]: # Check if answer is correct
+                                    print("Letter correct!")
                                     completed = True
+                                else:
+                                    print("Incorrect")
+                                    if tasks.repeatUntilCorrect:
+                                        if tasks.repeatImmediately:
+                                            completed = False
+                                        else:
+                                            question.append(letter)
+                                            completed = True
+                                    else:
+                                        completed = True
+                            else:
+                                completed = True
                         else:
-                            completed = True
+                            completed = False
 
                     if g.checkBtnState('RST'):
                         g.resetBtnStates()
@@ -150,6 +154,7 @@ def main():
                     print("That is incorrect!")
             else:
                 print('Word done!')
+        print('Level complete!')
 
 
 # i n i t i a l i z e A u d i o ():
@@ -450,34 +455,27 @@ def initializeGPIO():
     #GPIO.setmode(GPIO.BOARD)
     
     # Input braille cell
-    GPIO.setup(c.BRAILLE_P1_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Braille part 1
-    GPIO.setup(c.BRAILLE_P2_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Braille part 2
-    GPIO.setup(c.BRAILLE_P3_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Braille part 3
-    GPIO.setup(c.BRAILLE_P4_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Braille part 4
-    GPIO.setup(c.BRAILLE_P5_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Braille part 5
-    GPIO.setup(c.BRAILLE_P6_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Braille part 6
+    for pin in range(len(c.BRAILLE_INPUT_PIN)):
+        GPIO.setup(c.BRAILLE_INPUT_PIN[pin], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
     # Control buttons
-    GPIO.setup(c.NEXT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP) # Next button
-    GPIO.setup(c.RESET_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP) # Reset button
-    GPIO.setup(c.INDICATOR_UP, GPIO.IN, pull_up_down=GPIO.PUD_UP) # Level indicator up
-    GPIO.setup(c.INDICATOR_DOWN, GPIO.IN, pull_up_down=GPIO.PUD_UP) # Level indicator down
+    for pin in range(len(c.FUNCTION_PIN)):
+        GPIO.setup(c.FUNCTION_PIN[pin], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-    # Setup callbacks
-    GPIO.add_event_detect(c.BRAILLE_P1_PIN, GPIO.RISING, callback=g.callback0, bouncetime=c.BOUNCE_TIME)
-    GPIO.add_event_detect(c.BRAILLE_P2_PIN, GPIO.RISING, callback=g.callback1, bouncetime=c.BOUNCE_TIME)
-    GPIO.add_event_detect(c.BRAILLE_P3_PIN, GPIO.RISING, callback=g.callback2, bouncetime=c.BOUNCE_TIME)
-    GPIO.add_event_detect(c.BRAILLE_P4_PIN, GPIO.RISING, callback=g.callback3, bouncetime=c.BOUNCE_TIME)
-    GPIO.add_event_detect(c.BRAILLE_P5_PIN, GPIO.RISING, callback=g.callback4, bouncetime=c.BOUNCE_TIME)
-    GPIO.add_event_detect(c.BRAILLE_P6_PIN, GPIO.RISING, callback=g.callback5, bouncetime=c.BOUNCE_TIME)
+    # Setup callback
+    
+    GPIO.add_event_detect(c.BRAILLE_INPUT_PIN[0], GPIO.RISING, callback=g.callback0, bouncetime=c.BOUNCE_TIME)
+    GPIO.add_event_detect(c.BRAILLE_INPUT_PIN[1], GPIO.RISING, callback=g.callback1, bouncetime=c.BOUNCE_TIME)
+    GPIO.add_event_detect(c.BRAILLE_INPUT_PIN[2], GPIO.RISING, callback=g.callback2, bouncetime=c.BOUNCE_TIME)
+    GPIO.add_event_detect(c.BRAILLE_INPUT_PIN[3], GPIO.RISING, callback=g.callback3, bouncetime=c.BOUNCE_TIME)
+    GPIO.add_event_detect(c.BRAILLE_INPUT_PIN[4], GPIO.RISING, callback=g.callback4, bouncetime=c.BOUNCE_TIME)
+    GPIO.add_event_detect(c.BRAILLE_INPUT_PIN[5], GPIO.RISING, callback=g.callback5, bouncetime=c.BOUNCE_TIME)
 
-    GPIO.add_event_detect(c.NEXT_PIN, GPIO.RISING, callback=g.callbackNXT, bouncetime=c.BOUNCE_TIME)
-    GPIO.add_event_detect(c.RESET_PIN, GPIO.RISING, callback=g.callbackRST, bouncetime=c.BOUNCE_TIME)
-    GPIO.add_event_detect(c.INDICATOR_UP, GPIO.RISING, callback=g.callbackLVLUP, bouncetime=c.BOUNCE_TIME)
-    GPIO.add_event_detect(c.INDICATOR_DOWN, GPIO.RISING, callback=g.callbackLVLDOWN, bouncetime=c.BOUNCE_TIME)    
-
-
-                
+    GPIO.add_event_detect(c.FUNCTION_PIN[0], GPIO.RISING, callback=g.callbackNXT, bouncetime=c.BOUNCE_TIME)
+    GPIO.add_event_detect(c.FUNCTION_PIN[1], GPIO.RISING, callback=g.callbackRST, bouncetime=c.BOUNCE_TIME)
+    GPIO.add_event_detect(c.FUNCTION_PIN[2], GPIO.RISING, callback=g.callbackLVLUP, bouncetime=c.BOUNCE_TIME)
+    GPIO.add_event_detect(c.FUNCTION_PIN[3], GPIO.RISING, callback=g.callbackLVLDOWN, bouncetime=c.BOUNCE_TIME)    
+        
 # Check whether this file is the file that is executed first
 # This part should be at the bottom to ensure all called methods are defined before calling them
 if __name__ == '__main__':
