@@ -1,11 +1,11 @@
 #Quiz options
-quizMode           = 2	   # Mode of this quiz: can be 1,2,3 or 4. Where 3 is word spoken and displayed
+quizMode = 2               # Mode of this quiz: can be 1,2,3 or 4. Where 3 is word spoken and displayed
 repeatUntilCorrect = True  # Repeats questions if answered incorrectly
-repeatImmediately  = False # Whether to repeat immediately or when all other questions are asked
-randomizeOrder     = True  # Whether to ask questions in a random order or as they are given
+repeatImmediately = False  # Whether to repeat immediately or when all other questions are asked
+randomizeOrder = True      # Whether to ask questions in a random order or as they are given
 
-feedbackPerLetter  = False # Whether to provide feedback for every letter or for every question
-readEveryLetter    = False # Whether to read each single letter out loud
+feedbackPerLetter = False  # Whether to provide feedback for every letter or for every question
+readEveryLetter = False    # Whether to read each single letter out loud
 
 #Quiz content
 quiz = ['g', 'h', 'i']
@@ -19,21 +19,21 @@ quiz = ['g', 'h', 'i']
 
 
 if len(max(quiz, key=len)) > 1:
-	# If quiz contains words, errors must be repeated immediately and until correct if feedback is provided per letter
-	if feedbackPerLetter: 
-    	repeatUntilCorrect = True
-    	repeatImmediately = True
+    # If quiz contains words, errors must be repeated immediately and until correct if feedback is provided per letter
+    if feedbackPerLetter: 
+        repeatUntilCorrect = True
+        repeatImmediately = True
 
     # Ensure mode is set for words if words are asked and for single letters if those are asked
     if quizMode == 1:
-    	quizMode = 3
+        quizMode = 3
     if quizMode == 2:
-    	quizMode = 4
+        quizMode = 4
 else:
-	# Only read every letter of a word if the quiz contains words
-	readEveryLetter = False
+    # Only read every letter of a word if the quiz contains words
+    readEveryLetter = False
 
-	if quizMode == 3:
-		quizMode = 1
-	if quizMode == 4:
-		quizMode = 2
+    if quizMode == 3:
+        quizMode = 1
+    if quizMode == 4:
+        quizMode = 2
