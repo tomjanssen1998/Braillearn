@@ -43,6 +43,15 @@ def main():
             if abort:       #Stop current quiz (to go to different level)
                 break
 
+            #Ask question to user
+            if tasks.quizMode < 3: #If the quiz is for single letters:
+            	string = "Please write the letter: " + question
+            else:
+            	string = "Please write the word: " + question
+            	
+            #Prepare_TTS(string)
+            print(string)
+
             #loop through letters of question one by one
             for count, letter in enumerate(question):
                 
@@ -52,13 +61,32 @@ def main():
                 completed = False
                 
                 while not completed:
-                    print("write the symbol for '" + letter + "': " + str(g.T2B[letter]))
-                    string = "write the symbol for: " + letter
-                    
-#                     Prepare_TTS(string)
+                    if task.readEveryLetter:
+	                    string = "The next letter is: " + letter
+	                    print(string + "': " + str(g.T2B[letter]))
+						#Prepare_TTS(string)
+					else:
+						print(letter + ' : ' + str(g.T2B[letter])) #For testing purposes only
+
+					#Display requested letter if required
+					if task.quizMode == 1 or task.quizMode == 3:
+						print("Activating read braille cell") #For debugging purposes
+						#actuate braille read cell
+						out_val = g.T2B[letter]
+						if out_val >= 32:
+							out_val -= 32
+							#activate braille dot 6
+						if out_val >= 16:
+							out_val -= 16
+							#activate braille dot 5
+						#etc...
+						
 
                     waitForBreak() # Wait for user inputs
                     
+                    for dot in range(0,6):
+                    	#deactivate braille bot 'dot'
+
                     if g.checkBtnState('LVLUP'):
                         g.resetBtnStates()
                         if g.task < g.taskCount:
