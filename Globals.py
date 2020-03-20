@@ -9,9 +9,6 @@ import os
 #  1 = Game mode 1
 #  To be continued
 globalState = 0
-currentAudio = ''
-pausedAudio = ''
-pausedPosition = 0.0 # At what position of audio do we pause
 
 buttonState = [0,0,0,0] # In order: [RST, NXT, LVLUP, LVLDOWN]
 brailleState = [0,0,0,0,0,0]
