@@ -13,157 +13,226 @@ import random # randrange
 # Main function
 #
 def main():
+    
     a.initializeAudio()
     print('Done initializing audio')
     initializeGPIO()
     print('Done initializing GPIO')
     
-    runTutorial() # Tutorial of device
+    g.globalState = 0
+    #runTutorial() # Tutorial of device
     
-    runProgram() # Main program of device
-
-
-# r u n P r o g r a m ()
-# ===============================
-# run the main braillearn program
-#
-def runProgram():
-    taskFile = 'Tasks.Task1'
+    g.globalState = 1
+    runTask('Tasks.Task1') # Run first task
     
     #Infinite loop: only stop main program when RPi is shut down
-    while True:
-        #Dynamically load tasks when switching levels
-        tasks = importlib.import_module(taskFile)
-        abort = False
+    while True: # After finishing/aborting a task we end up here
+        if g.checkBtnState('LVLUP'):
+            handleIndicatorsLocally('LVLUP')
+        if g.checkBtnState('LVLDOWN'):
+            handleIndicatorsLocally('LVLDOWN')
+
+
+# r u n T a s k (task_file)
+# ===============================
+# runs the task 'task_file'
+#
+def runTask(task_file):
+       
+    g.taskRunning = True
+    tasks = importlib.import_module(task_file)  #Dynamically load task
+    g.abort = False
         
-        #Randomize order of quiz if desired
-        quiz = tasks.quiz.copy()
-        if tasks.randomizeOrder:
-            random.shuffle(quiz)
+    #Randomize order of quiz if desired
+    quiz = tasks.quiz.copy()
+    if tasks.randomizeOrder:
+        random.shuffle(quiz)
 
-        print(quiz)
+    print(quiz)
 
-        #loop though question of quiz
-        for question in quiz:
-            answer = []
+    #loop though question of quiz
+    for question in quiz:
+        answer = []
 
-            if abort:       #Stop current quiz (to go to different level)
+        if g.abort:       #Stop current quiz (to go to different level)
+            print('Level cancelled')
+            g.taskRunning = False
+            break
+
+        #Ask question to user
+        if tasks.quizMode < 3: #If the quiz is for single letters:
+            a.playAudio('/Program/pleaseletter', 0)
+            a.waitForAudio()
+            a.playAudio('/Program/' + question, 0)
+            a.waitForAudio()
+            string = "Please write the letter: " + question
+        else:
+            a.playAudio('/Program/pleaseword', 0)
+            a.waitForAudio()
+            a.playAudio('/Program/' + question, 0)
+            a.waitForAudio()
+            string = "Please write the word: " + question
+                
+        time.sleep(c.PROGRAM_SLEEP_TIME1)
+        print(string)
+
+        #loop through letters of question one by one
+        for count, letter in enumerate(question):
+                
+            if g.abort:   #Stop current quiz (to go to different level)
                 break
-
-            #Ask question to user
-            if tasks.quizMode < 3: #If the quiz is for single letters:
-                string = "Please write the letter: " + question
-            else:
-                string = "Please write the word: " + question
                 
-            #Prepare_TTS(string)
-            print(string)
-
-            #loop through letters of question one by one
-            for count, letter in enumerate(question):
+            completed = False
                 
-                if abort:   #Stop current quiz (to go to different level)
-                    break
-                
-                completed = False
-                
-                while not completed:
-                    if tasks.readEveryLetter:
-                        string = "The next letter is: " + letter
-                        print(string + "': " + str(g.T2B[letter]))
-                        #Prepare_TTS(string)
-                    else:
-                        print(letter + ' : ' + str(g.T2B[letter])) #For testing purposes only
-
-                    #Display requested letter if required
-                    if tasks.quizMode == 1 or tasks.quizMode == 3:
-                        print("Activating read braille cell") #For debugging purposes
-                        #actuate braille read cell
-                        out_val = g.T2B[letter]
-                        for dot in range(5,-1,-1):
-                            if out_val >= 2**dot:
-                                out_val -= 2**dot
-                                #activate braille dot 'dot'
-
-                    waitForBreak() # Wait for user inputs
-                    
-                    for dot in range(0,6):
-                        #deactivate braille dot 'dot'
-                        pass
-
-                    if g.checkBtnState('LVLUP'):
-                        g.resetBtnStates()
-                        if g.task < g.taskCount:
-                            g.task += 1
+            while not completed:
+                if tasks.readEveryLetter:
+                    if (tasks.quizMode > 2): # working with words
+                        if (count == 0):
+                            a.playAudio('/Program/letterfirstis', 0)
+                        elif (count == (len(question)-1)):
+                            a.playAudio('/Program/letterfinalis', 0)
                         else:
-                            g.task = 1 # Start at the front again
-                        taskFile = 'Tasks.Task' + str(g.task)
-                        abort = True
-                        print('Moving to task ' + str(g.task))
-                        break
+                            a.playAudio('/Program/letternextis', 0)
+                                
+                    a.waitForAudio()
+                    a.playAudio('/Program/' + letter, 0)
+                    a.waitForAudio()
+                    time.sleep(c.PROGRAM_SLEEP_TIME1)
+                        
+                    string = "The next letter is: " + letter
+                    print(string + "': " + str(g.T2B[letter]))
+                else:
+                    print(letter + ' : ' + str(g.T2B[letter])) #For testing purposes only
+
+                #Display requested letter if required
+                if tasks.quizMode == 1 or tasks.quizMode == 3:
+                    print("Activating read braille cell") #For debugging purposes
+                    #actuate braille read cell
+                    out_val = g.T2B[letter]
+                    for dot in range(5,-1,-1):
+                        if out_val >= 2**dot:
+                            out_val -= 2**dot
+                            #activate braille dot 'dot'
+                        
+                    if (c.INFORM_USER_LEFT_BRAILLE_IS_ACTIVE):
+                        a.playAudio('/Program/demo', 0)
+                        a.waitForAudio()
+
+                waitForBreak() # Wait for user inputs
                     
-                    if g.checkBtnState('LVLDOWN'):
-                        g.resetBtnStates()
-                        if g.task > 1:
-                            g.task -= 1
-                        else:
-                            g.task = g.taskCount
-                        taskFile = 'Tasks.Task' + str(g.task)
-                        abort = True
-                        print('Moving to task ' + str(g.task))
-                        break
+                for dot in range(0,6):
+                    #deactivate braille dot 'dot'
+                    pass
+                    
+                if g.abort: # As replacement of previous level-indicator code here
+                    break       
                             
-                    if g.checkBtnState('NXT'):
-                        g.resetBtnStates()
-                        if g.lastBinInput != 0: # Something is filled in
+                if g.checkBtnState('NXT'):
+                    g.resetBtnStates()
+                    if g.lastBinInput != 0: # Something is filled in
+                        try:
+                            answer[count] = g.B2T[g.lastBinInput]
+                        except:
                             try:
-                                answer[count] = g.B2T[g.lastBinInput]
+                                answer.append(g.B2T[g.lastBinInput])
                             except:
-                                try:
-                                    answer.append(g.B2T[g.lastBinInput])
-                                except:
-                                    pass
-                            print("Answer: " + str(answer))
+                                pass
+                        print("Answer: " + str(answer))
                             
-                            if tasks.feedbackPerLetter:
-                                if g.lastBinInput == g.T2B[letter]: # Check if answer is correct
-                                    print("Letter correct!")
-                                    completed = True
-                                else:
-                                    print("Incorrect")
-                                    if tasks.repeatUntilCorrect:
-                                        if tasks.repeatImmediately:
-                                            completed = False
-                                        else:
-                                            question.append(letter)
-                                            completed = True
-                                    else:
-                                        completed = True
-                            else:
+                        if tasks.feedbackPerLetter:
+                            if g.lastBinInput == g.T2B[letter]: # Check if answer is correct
+                                a.playAudio('correct_short', 0)
+                                a.waitForAudio()
+                                    
+                                print("Letter correct!")
                                 completed = True
+                            else:
+                                a.playAudio('incorrect_short', 0)
+                                a.waitForAudio()
+                                    
+                                print("Incorrect")
+                                if tasks.repeatUntilCorrect:
+                                    if tasks.repeatImmediately:
+                                        completed = False
+                                    else:
+                                        question.append(letter)
+                                        completed = True
+                                else:
+                                    completed = True
                         else:
-                            completed = False
+                            completed = True
+                    else:
+                        completed = False
 
-                    if g.checkBtnState('RST'):
-                        g.resetBtnStates()
+                if g.checkBtnState('RST'):
+                    g.resetBtnStates()
 
-
+        if (not g.abort): # don't give such feedback when going to other task
             if not tasks.feedbackPerLetter:
                 answer = ''.join(answer)
                 if question == answer:
+                    a.playAudio('correct', 0)
+                    a.waitForAudio()    
+                        
                     print("Question answered correctly!")
                 elif tasks.repeatUntilCorrect:
                     if tasks.repeatImmediately:
+                        a.playAudio('incorrect_repeatImmediately', 0)
+                        a.waitForAudio()
+                            
                         print("That is incorrect, try again!")
                         quiz.insert(question,count+1)
                     else:
+                        a.playAudio('incorrect_repeatLater', 0)
+                        a.waitForAudio()
+                            
                         print("That is incorrect, try again later!")
                         quiz.append(question)
                 else:
+                    a.playAudio('incorrect', 0)
+                    a.waitForAudio()
+                        
                     print("That is incorrect!")
             else:
+                time.sleep(c.PROGRAM_SLEEP_TIME1)
+                a.playAudio('/Program/wordcomplete', 0)
+                a.waitForAudio()
                 print('Word done!')
+          
+    if (not g.abort): # don't give such feedback when going to other task
+        time.sleep(c.PROGRAM_SLEEP_TIME2)
+        a.playAudio('/Program/taskcomplete', 0)
+        a.waitForAudio()
+        g.taskRunning = False
         print('Level complete!')    
+
+
+# h a n d l e I n d i c a t o r s L o c a l l y (indicator)
+# ===============================
+# called when a level-indicator press is detected and moves program to a new task
+#
+def handleIndicatorsLocally(indicator):
+    g.resetBtnStates()
+    if (indicator == 'LVLUP'):
+        if g.task < g.taskCount:
+            g.task += 1
+        else:
+            g.task = 1 # Start at the front again
+    elif (indicator == 'LVLDOWN'):
+        if g.task > 1:
+            g.task -= 1
+        else:
+            g.task = g.taskCount
+            
+    g.taskFile = 'Tasks.Task' + str(g.task)
+    print('Moving to task ' + str(g.task))
+                        
+    a.playAudio('/Program/task', 0)
+    a.waitForAudio()
+    a.playAudio('/Program/' + str(g.task), 0)
+    time.sleep(c.PROGRAM_SLEEP_TIME1)
+    
+    runTask(g.taskFile) # run the new task
 
 
 # r u n T u t o r i a l ()
@@ -172,14 +241,14 @@ def runProgram():
 #
 def runTutorial():
     
-    g.globalState = -1 # Tutorial part 1 - Introduction
-    a.playAudio('Tutorial1', 0)
+    # Tutorial part 1 - Introduction
+    a.playAudio('/Tutorial/part1', 0)
     
     waitForTutorial()
     
     time.sleep(c.TUTORIAL_SLEEP_TIME1)
-    g.globalState = -2 # Tutorial part 2 - Buttons
-    a.playAudio('Tutorial2', 0)
+    # Tutorial part 2 - Buttons
+    a.playAudio('/Tutorial/part2', 0)
         
     skipped = waitForTutorial()    
     if (not skipped):
@@ -193,8 +262,8 @@ def runTutorial():
         waitForBtnPress('LVLDOWN')
     
     time.sleep(c.TUTORIAL_SLEEP_TIME1)
-    g.globalState = -3 # Tutorial part 3 - Braille inputs
-    a.playAudio('Tutorial3-1', 0)
+    # Tutorial part 3 - Braille inputs
+    a.playAudio('/Tutorial/part3.1', 0)
     
     skipped = waitForTutorial()
     if (not skipped):
@@ -202,13 +271,19 @@ def runTutorial():
         waitForAllBraille()
 
     time.sleep(c.TUTORIAL_SLEEP_TIME1)
-    a.playAudio('Tutorial3-2', 0)
+    a.playAudio('/Tutorial/part3.2', 0)
     
     waitForTutorial()
 
     time.sleep(c.TUTORIAL_SLEEP_TIME1)
-    g.globalState = -4 # Tutorial part 4 - Concluding
-    a.playAudio('Tutorial4', 0)
+    # Tutorial part 4 - Learning modes
+    a.playAudio('/Tutorial/part4', 0)
+    
+    waitForTutorial()
+    
+    time.sleep(c.TUTORIAL_SLEEP_TIME1)
+    # Tutorial part 5 - Concluding
+    a.playAudio('/Tutorial/part5', 0)
     
     while True:
         time.sleep(0.01)
@@ -222,6 +297,7 @@ def runTutorial():
             break   
         
     print("Tutorial done")
+    time.sleep(c.TUTORIAL_SLEEP_TIME1) # sleep small moment before running main program
 
 
 # w a i t F o r A l l B r a i l l e()
@@ -232,7 +308,7 @@ def waitForAllBraille():
     # ToDo: Set all braille input pins in up position
     a.pausedPosition = 0.0 # Reset pause position variable
     
-    a.playAudio('TutorialBRAILLE', 0)
+    a.playAudio('/Tutorail/part3.1_BRAILLE', 0)
     prevInput = currInput = 0
     
     while True:
@@ -247,7 +323,7 @@ def waitForAllBraille():
             prevInput = currInput
             a.pauseAudio()
             
-            a.playAudio('Correct_Short', 0)
+            a.playAudio('correct_short', 0)
             a.waitForAudio()
             
             a.unpauseAudio()
@@ -259,7 +335,7 @@ def waitForAllBraille():
     g.lastBinInput = 0
     
     print("All braille cells pressed")
-    a.playAudio('Correct', 0)
+    a.playAudio('correct', 0)
     a.waitForAudio()
 
 
@@ -271,7 +347,7 @@ def waitForBtnPress(button_name):
     g.resetBtnStates()
     a.pausedPosition = 0.0 # Reset pause position variable
     
-    a.playAudio('Tutorial' + button_name, 0)
+    a.playAudio('/Tutorial/part2_' + button_name, 0)
     
     is_pressed = g.checkBtnState(button_name)
     while (not is_pressed):
@@ -280,7 +356,7 @@ def waitForBtnPress(button_name):
             print("Incorrect button pressed")
             a.pauseAudio() # Pause currently playing
             
-            a.playAudio('Incorrect', 0)
+            a.playAudio('incorrect', 0)
             a.waitForAudio()
             
             a.unpauseAudio() # Resume currently playing
@@ -292,7 +368,7 @@ def waitForBtnPress(button_name):
     a.stopAudio() # when user has pressed target button, we can stop button-specific instruction
     
     print("Correct button pressed")
-    a.playAudio('Correct', 0)
+    a.playAudio('correct', 0)
     a.waitForAudio()
     
     g.setBtnState(button_name, False)
@@ -320,11 +396,11 @@ def waitForTutorial():
 # Only leaves loop when next-button or reset-button input occurs
 #
 def waitForBreak():
-    g.resetBtnStates()
+    #g.resetBtnStates() DIDTHIS TEMPORARY
     
     while True :
         time.sleep(0.01) #Precautionary: Don't know if this is needed, but thought is that this delay gives the interrupt time to change variable
-        if (g.checkBtnState('NXT') or g.checkBtnState('RST')):
+        if (g.checkBtnState('NXT') or g.checkBtnState('RST') or g.checkBtnState('LVLUP') or g.checkBtnState('LVLDOWN')):
             break
         
 

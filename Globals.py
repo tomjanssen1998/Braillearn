@@ -2,20 +2,20 @@ from Dicts import *
 import os
 
 # Global states:
-# -3 = Tutorial part 3
-# -2 = Tutorial part 2
-# -1 = Tutorial part 1
-#  0 = Default
-#  1 = Game mode 1
+#  0 = Tutoiral
+#  1 = Main program
 #  To be continued
 globalState = 0
+taskRunning = False
+abort = False
 
 buttonState = [0,0,0,0] # In order: [RST, NXT, LVLUP, LVLDOWN]
 brailleState = [0,0,0,0,0,0]
 binInput = 0
 lastBinInput = 0
-task = 1
 
+task = 1
+taskFile = '' 
 TaskDir = './Tasks'
 taskCount = len([name for name in os.listdir(TaskDir) if os.path.isfile(os.path.join(TaskDir,name))])
 
@@ -90,15 +90,23 @@ def callbackNXT(channel):
         
 def callbackLVLUP(channel):
     global buttonState
+    global abort
     print('callbackLVLUP called')
-    callbackNXT(channel)
+    #callbackNXT(channel)
     buttonState[2] = 1
+    
+    if (globalState == 1): # To make abort action immediately take effect
+        abort = True
 
 def callbackLVLDOWN(channel):
     global buttonState
+    global abort
     print('callbackLVLDOWN called')
-    callbackNXT(channel)
+    #callbackNXT(channel)
     buttonState[3] = 1
+    
+    if (globalState == 1): # To make abort action immediately take effect
+        abort = True
 
 # c h e c k S t a t e (button_name)
 # ===============================

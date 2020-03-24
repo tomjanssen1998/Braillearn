@@ -1,4 +1,5 @@
 from pygame import mixer #for playing mp3 sounds
+import Globals as g
 import random # randrange
 import Constant as c
 import time
@@ -25,7 +26,7 @@ def initializeAudio():
 def playAudio(audio_name, position):
     global currentAudio
     
-    if (audio_name == 'Incorrect' or audio_name == 'Correct' or audio_name == 'Correct_Short'):
+    if (audio_name == 'incorrect' or audio_name == 'correct' or audio_name == 'correct_short' or audio_name == 'incorrect_repeatImmediately' or audio_name == 'incorrect_repeatLater'):
         r = random.randrange(2)
         if (r == 0):
             to_load = 'Sounds/' + audio_name + '1.mp3'
@@ -34,10 +35,13 @@ def playAudio(audio_name, position):
     else:
         to_load = 'Sounds/' + audio_name + '.mp3'
     
-    currentAudio = audio_name # currently playing audio
-    mixer.music.load(to_load)
-    mixer.music.play(0, position) # 0 indicates it plays 1 time
-    print("playing: " + audio_name + " at pos: " + str(mixer.music.get_pos()))
+    try:
+        currentAudio = audio_name # currently playing audio
+        mixer.music.load(to_load)
+        mixer.music.play(0, position) # 0 indicates it plays 1 time
+        print("playing: " + audio_name + " at pos: " + str(mixer.music.get_pos()))
+    except:
+        print("Error: Audio file not found")
 
 
 # s t o p A u d i o ():
@@ -90,3 +94,7 @@ def waitForAudio():
     while (is_playing) :
         time.sleep(0.01)
         is_playing = mixer.music.get_busy()
+        if (g.taskRunning and g.abort): # When task-text is being spoken and we abort, then stop audio immediately
+            stopAudio()
+            return
+        
