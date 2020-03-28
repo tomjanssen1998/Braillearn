@@ -1,5 +1,7 @@
 from Dicts import *
 import os
+import Constant as c
+import RPi.GPIO as GPIO
 
 # Global states:
 #  0 = Tutoiral
@@ -9,6 +11,7 @@ globalState = 0
 taskRunning = False
 abort = False
 
+WRITE_PINS = []
 buttonState = [0,0,0,0] # In order: [RST, NXT, LVLUP, LVLDOWN]
 brailleState = [0,0,0,0,0,0]
 binInput = 0
@@ -19,6 +22,11 @@ taskFile = ''
 TaskDir = './Tasks'
 taskCount = len([name for name in os.listdir(TaskDir) if os.path.isfile(os.path.join(TaskDir,name))])
 
+GPIO.setmode(GPIO.BOARD)
+for pin in range(len(c.BRAILLE_WRITE_PAD)):
+    GPIO.setup(c.BRAILLE_WRITE_PAD[pin],GPIO.OUT)
+    WRITE_PINS.append(GPIO.PWM(c.BRAILLE_WRITE_PAD[pin],40000))
+    WRITE_PINS[pin].start(0)
 
 #Global callbacks to call when buttons are pressed
 
@@ -28,6 +36,7 @@ def callback0(channel):
     if brailleState[0] == 0:
         binInput += 1
         brailleState[0] = 1
+    WRITE_PINS[0].ChangeDutyCycle(60)
     print(brailleState)
 
 def callback1(channel):
@@ -36,6 +45,7 @@ def callback1(channel):
     if brailleState[1] == 0:
         binInput += 2
         brailleState[1] = 1
+    WRITE_PINS[1].ChangeDutyCycle(60)
     print(brailleState)
 
 def callback2(channel):
@@ -44,6 +54,7 @@ def callback2(channel):
     if brailleState[2] == 0:
         binInput += 4
         brailleState[2] = 1
+    WRITE_PINS[2].ChangeDutyCycle(60)
     print(brailleState)
 
 def callback3(channel):
@@ -52,6 +63,7 @@ def callback3(channel):
     if brailleState[3] == 0:
         binInput += 8
         brailleState[3] = 1
+    WRITE_PINS[3].ChangeDutyCycle(60)
     print(brailleState)
 
 def callback4(channel):
@@ -60,6 +72,7 @@ def callback4(channel):
     if brailleState[4] == 0:
         binInput += 16
         brailleState[4] = 1
+    WRITE_PINS[4].ChangeDutyCycle(60)
     print(brailleState)
 
 def callback5(channel):
@@ -68,6 +81,7 @@ def callback5(channel):
     if brailleState[5] == 0:
         binInput += 32
         brailleState[5] = 1
+    WRITE_PINS[5].ChangeDutyCycle(60)
     print(brailleState)
 
 def callbackRST(channel):
@@ -77,6 +91,8 @@ def callbackRST(channel):
     brailleState = [0,0,0,0,0,0]
     binInput = 0
     buttonState[0] = 1
+    for pin in range(len(WRITE_PINS)):
+        WRITE_PINS[pin].ChangeDutyCycle(0)
 
 def callbackNXT(channel):
     global binInput
@@ -87,6 +103,8 @@ def callbackNXT(channel):
     brailleState = [0,0,0,0,0,0]
     binInput = 0
     buttonState[1] = 1
+    for pin in range(len(WRITE_PINS)):
+        WRITE_PINS[pin].ChangeDutyCycle(0)
         
 def callbackLVLUP(channel):
     global buttonState

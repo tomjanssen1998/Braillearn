@@ -8,6 +8,8 @@ import Audio as a
 import RPi.GPIO as GPIO
 import random # randrange
 
+READ_PINS = []
+
 # m a i n ()
 # ===========================
 # Main function
@@ -112,7 +114,10 @@ def runTask(task_file):
                     for dot in range(5,-1,-1):
                         if out_val >= 2**dot:
                             out_val -= 2**dot
+                            READ_PINS[dot].ChangeDutyCycle(60)
                             #activate braille dot 'dot'
+                        else:
+                            READ_PINS[dot].ChangeDutyCycle(0)
                         
                     if (c.INFORM_USER_LEFT_BRAILLE_IS_ACTIVE):
                         a.playAudio('/Program/demo', 0)
@@ -122,7 +127,7 @@ def runTask(task_file):
                     
                 for dot in range(0,6):
                     #deactivate braille dot 'dot'
-                    pass
+                    READ_PINS[dot].ChangeDutyCycle(0)
                     
                 if g.abort: # As replacement of previous level-indicator code here
                     break       
@@ -205,7 +210,8 @@ def runTask(task_file):
         a.waitForAudio()
         g.taskRunning = False
         print('Level complete!')    
-
+        for dot in range(len(READ_PINS)):
+            READ_PINS[dot].ChangeDutyCycle(0)
 
 # h a n d l e I n d i c a t o r s L o c a l l y (indicator)
 # ===============================
@@ -409,6 +415,7 @@ def waitForBreak():
 # initialize all GPIO pins used
 #
 def initializeGPIO():
+    global READ_PINS
     GPIO.setmode(GPIO.BCM) #referring to the pins by the "Broadcom SOC channel" numbers
     
     #For Raspberry Pi 3B:
@@ -421,7 +428,11 @@ def initializeGPIO():
     # Control buttons
     for pin in range(len(c.FUNCTION_PIN)):
         GPIO.setup(c.FUNCTION_PIN[pin], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
+    
+    for pin in range(len(c.BRAILLE_READ_PAD)):
+        GPIO.setup(c.BRAILLE_READ_PAD[pin], GPIO.OUT)
+        READ_PINS.append(GPIO.PWM(c.BRAILLE_READ_PAD[pin],40000))
+        READ_PINS[pin].start(0)
     # Setup callback
     
     GPIO.add_event_detect(c.BRAILLE_INPUT_PIN[0], GPIO.RISING, callback=g.callback0, bouncetime=c.BOUNCE_TIME)
