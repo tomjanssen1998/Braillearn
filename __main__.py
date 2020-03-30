@@ -151,6 +151,13 @@ def runTask(task_file):
                                     
                                 print("Letter correct!")
                                 completed = True
+                            elif tasks.contractions:
+                                if g.lastBinInput == g.T2B[question]:
+                                    completed = True
+                                    answer = question
+                                    break
+                                    print("Contraction correct!")
+
                             else:
                                 a.playAudio('incorrect_short', 0)
                                 a.waitForAudio()
@@ -160,7 +167,10 @@ def runTask(task_file):
                                     if tasks.repeatImmediately:
                                         completed = False
                                     else:
-                                        question.append(letter)
+                                        if g.contractions:
+                                            quiz.append(question)
+                                        else:
+                                            question.append(letter)
                                         completed = True
                                 else:
                                     completed = True
@@ -312,6 +322,8 @@ def runTutorial():
 #
 def waitForAllBraille():
     # ToDo: Set all braille input pins in up position
+    for pin in range(len(READ_PINS))
+        READ_PINS[pin].ChangeDutyCycle(0)
     a.pausedPosition = 0.0 # Reset pause position variable
     
     a.playAudio('/Tutorail/part3.1_BRAILLE', 0)
@@ -322,9 +334,10 @@ def waitForAllBraille():
         time.sleep(0.01)
         currInput = g.binInput
         
-        if (currInput == g.T2B['all']): # all braille pins are down
+        if (currInput == g.T2B['for']): # all braille pins are down
             break
         
+
         if (prevInput != currInput): # braille pin was pressed but not yet all pins are down
             prevInput = currInput
             a.pauseAudio()
@@ -335,7 +348,8 @@ def waitForAllBraille():
             a.unpauseAudio()
     
     a.stopAudio() # when user has pressed target button, we can stop button-specific instruction
-    
+    for pin in range(len(READ_PINS))
+            READ_PINS[pin].ChangeDutyCycle(0)
     g.brailleState = [0,0,0,0,0,0] # reset Braille input
     g.binInput = 0
     g.lastBinInput = 0
