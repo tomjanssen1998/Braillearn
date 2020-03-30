@@ -6,6 +6,7 @@ randomizeOrder = True      # Whether to ask questions in a random order or as th
 
 feedbackPerLetter = False  # Whether to provide feedback for every letter or for every question
 readEveryLetter = True     # Whether to read each single letter out loud
+contractions = False       # whether this task tests contractions
 
 #Quiz content
 quiz = ['hoi', 'hallo', 'doei']
@@ -19,6 +20,10 @@ if len(max(quiz, key=len)) > 1:
     if feedbackPerLetter: 
         repeatUntilCorrect = True
         repeatImmediately = True
+
+    if contractions:            #To enable features dealing with contractions
+        readEveryLetter = False
+        feedbackPerLetter = True
 
     # Ensure mode is set for words if words are asked and for single letters if those are asked
     if quizMode == 1:
